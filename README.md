@@ -65,3 +65,12 @@ Where applicable, record:
 No experiments or performance results are recorded yet. The current focus is initial prior-art review and baseline planning.
 
 See `RESEARCH_STATE.md` for the current state and next actions.
+
+## Licensing
+
+- **Code:** Licensed under the GNU General Public License v3.0 only (GPL-3.0-only). See [`LICENSE`](LICENSE).
+- **Documentation and original research notes:** Licensed under Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0). See [`LICENSE-DOCS`](LICENSE-DOCS).
+
+These licenses apply only to material that the project contributors have the rights to license. Third-party papers, datasets, model weights, figures, code, and other materials remain subject to their respective licenses and rights. Do not assume this repository grants permission to redistribute third-party material.
+
+Research results and ideas are not guaranteed to be novel or exclusive. Please cite relevant original publications when building on prior work.
