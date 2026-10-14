@@ -3,7 +3,7 @@
 > Update this file whenever a decision, target, blocker, or next action changes. This file is the concise source of truth for the project.
 
 ## Status
-- **Phase:** Setup / prior-art review and baseline planning
+- **Phase:** Isolated baseline pilot preparation
 - **Last updated:** 2026-10-14
 - **Owner:** TODO
 - **Repository:** `project-atlas-llm-research`
@@ -19,24 +19,28 @@ User-provided Windows measurements (2026-10-14; snapshots may change):
 - **Installed system RAM:** 32,472 MB
 - **Available system RAM at measurement:** 10,216 MB
 - **C: drive:** 452.6 GB total; 115.3 GB free
-- **Operating system:** Windows (exact version/build TODO)
-- **CPU:** TODO
-- **Driver / CUDA / runtime:** TODO
-- **Power or thermal constraints:** TODO
-- **Primary workload:** TODO (choose a reproducible first workload; likely single-user local inference)
-- **Connectivity constraints:** Online for literature/downloads; offline requirement TODO
+- **Operating system:** Windows 10 Home Single Language; reported build 26340; Ubuntu 26.04 LTS under WSL2
+- **CPU:** Intel Core i9-14900HX (24 cores / 32 logical processors)
+- **Driver / CUDA / runtime:** Windows NVIDIA driver 610.74; CUDA UMD 13.3; WSL2 kernel 6.18.33.2-microsoft-standard-WSL2; llama.cpp server image ID recorded below
+- **Power or thermal constraints:** Not yet characterized
+- **Primary workload:** Single-user local inference, batch size 1
+- **Connectivity constraints:** Online currently; offline requirement not yet defined
 
 These measurements describe one point in time, not guaranteed free capacity. Recheck before downloads and experiments.
 
 ## Baseline model
-- **Model name and source:** TODO
-- **Exact revision / commit:** TODO
-- **Tokenizer revision:** TODO
-- **License:** TODO
-- **Parameter count:** TODO
-- **Weight format / quantization:** TODO
-- **Context length tested:** TODO
-- **Evaluation dataset / tasks:** TODO
+- **Model name and source:** Qwen3-1.7B-GGUF, published by ggml-org on Hugging Face
+- **Exact revision / commit:** `daeb8e2d528a760970442092f6bf1e55c3b659eb`
+- **Model file:** `Qwen3-1.7B-Q4_K_M.gguf`
+- **Model file SHA-256:** `d2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5`
+- **License:** Verify against the model repository before public distribution or derivative use
+- **Parameter count:** Approximately 2.03 billion, as reported by the running llama.cpp server
+- **Weight format / quantization:** GGUF, Q4_K_M
+- **Context length planned:** 4096 tokens; isolated pilot not yet run
+- **Evaluation dataset / tasks:** Planned fixed set of 20 prompts; not yet created or evaluated
+- **Runtime image ID:** `sha256:b0baccbe2e00b5d74e63f85f9f023c93d61d0f329475269e1e7002e87eb875ea`
+- **Runtime alias in existing DocPilot service:** `docpilot-qwen3-1.7b`; ATLAS will use a separate disposable container/port
+- **GPU offload in the existing service:** Not confirmed by available filtered logs; verify in isolated pilot
 
 ## Success criteria
 Set measurable targets before optimizing. Do not fill these with guessed values.
@@ -79,15 +83,19 @@ Long-context memory has extensive prior art too, including HeadInfer and RocketK
 5. Which concrete gap remains after reproducing the closest relevant prior art?
 
 ## Next actions
-- [ ] Record exact Windows build, CPU, GPU driver, and available inference runtimes.
-- [ ] Choose one small open-weight model and record exact revision, tokenizer, license, and format.
-- [ ] Choose a fixed, small evaluation workload and define quality/latency/memory measurements.
-- [ ] Run an unmodified baseline with repeated trials.
-- [ ] Expand the prior-art review, beginning with lossless weight compression and hardware-aware representations.
-- [ ] Only then select a specific research hypothesis and failure criterion.
+- [x] Record available CPU, OS, driver, GPU, and runtime details from user-provided inspection.
+- [x] Select a cached candidate model and verify its resolved model-file SHA-256.
+- [x] Write an isolated baseline pilot protocol at `experiments/EXP-20261014-001-baseline/README.md`.
+- [ ] Run the isolated pilot on port 3001 without modifying DocPilot; verify actual GPU offload and capture a smoke-test response.
+- [ ] Build and validate a fixed 20-prompt workload and measurement harness after pilot response timing fields are confirmed.
+- [ ] Run warm-ups and repeated baseline trials; record raw results and variability.
+- [ ] Verify model license and expand targeted prior-art review before making any novelty claim.
+- [ ] Select the next hypothesis only after baseline profiling and a specific prior-art gap are documented.
 
 ## Decision log
 | Date | Decision | Reason | Evidence / experiment |
 |---|---|---|---|
 | 2026-10-14 | Use the RTX 4060 Windows PC as the initial test environment | Concrete available hardware makes small reproducible experiments possible | User-provided system measurements; baseline not yet run |
 | 2026-10-14 | Review lossless weight compression prior art before choosing a contribution | Closely related published work already exists | Initial source review in `LITERATURE_REVIEW.md` |
+| 2026-10-14 | Use the cached Qwen3-1.7B Q4_K_M artifact as the first baseline candidate | Avoid an unnecessary model download and make the first experiment practical | Snapshot revision and SHA-256 verified inside existing container; ATLAS pilot still pending |
+| 2026-10-14 | Isolate ATLAS inference in a separate disposable container on host port 3001 | Avoid affecting the existing DocPilot app and its PostgreSQL service | Planned protocol in `experiments/EXP-20261014-001-baseline/README.md`; not yet run |
