@@ -380,6 +380,7 @@ def validate_runtime_config(row: dict[str, Any]) -> None:
 
 def run_one(base_url: str, prompt: dict[str, Any], phase: str, repetition: int, raw_path: Path, records: list[dict[str, Any]]) -> dict[str, Any]:
     payload = make_payload(prompt["text"])
+    request_started_utc = utc_now()
     status, response, elapsed_ms = request_json(base_url.rstrip("/") + CONFIG["endpoint"], payload, int(CONFIG["request_timeout_seconds"]))
     extracted = extract_timings(response)
     choices = response.get("choices", [])
@@ -391,7 +392,7 @@ def run_one(base_url: str, prompt: dict[str, Any], phase: str, repetition: int, 
     usage = response.get("usage", {}) if isinstance(response.get("usage", {}), dict) else {}
     timings = extracted["timings"]
     record: dict[str, Any] = {
-        "request_started_utc": utc_now(),
+        "request_started_utc": request_started_utc,
         "timestamp_utc": utc_now(),
         "phase": phase,
         "repetition": repetition,
