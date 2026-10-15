@@ -14,8 +14,8 @@
 - **Status:** Prior-art review
 - **Claim:** For at least one selected open-weight model and stored numeric format, a reversible tensor-aware transformation followed by a general-purpose compressor may reduce total model-file size beyond direct compression of the original tensor bytes, while exactly reconstructing every tested tensor value.
 - **Mechanism:** A reversible change in data layout may expose statistical redundancy that byte-level compression does not exploit in the original layout.
-- **Closest prior art:** Tan et al., “Approaching Shannon Bound with Lossless LLM Weight Compression” (arXiv:2606.15789); Xie et al., “Reimagining Memory Access for LLM Inference” (arXiv:2503.18869). These directly overlap with entropy-aware compression and bit-plane/data-layout transformations.
-- **What may be new:** Unknown. The hypothesis is initially a reproducibility/feasibility question, not a novelty claim. Any contribution must be distinct from the cited systems and their code.
+- **Closest prior art:** Tan et al., “Approaching Shannon Bound with Lossless LLM Weight Compression” (arXiv:2606.15789); Xie et al. (arXiv:2503.18869); ZipServ (https://github.com/QuiverDance/ZipServ_ASPLOS26); Neural Weight Compression (https://github.com/parda21/NWC); Split12 (https://github.com/brianbell-x/weight-compression); plus ZipNN (https://github.com/zipnn/zipnn) and z4ai (https://github.com/z4ai/z4ai) for tensor/checkpoint codecs. These overlap with entropy coding, byte/bit-plane layouts, and/or decompression integrated into GPU computation. See `research/PRIOR_ART_SCAN_2026-10-15.md`.
+- **What may be new:** Unknown. The broad mechanism is crowded. Keep this as a replication/control question only; do not pursue it as a novelty claim unless full-paper and source-code comparison identifies a concrete, meaningful gap.
 - **Assumptions:** The exact model weights can be legally downloaded and locally processed; the tensor format and metadata can be handled without altering tensor values.
 - **Predictions:** (1) Lossless round-trip checksums/bytes match exactly. (2) Any file-size gain remains after metadata and container overhead. (3) The transformation and decompression costs can be measured separately.
 - **Primary metric:** Total compressed bytes divided by original bytes, including metadata.
@@ -26,7 +26,7 @@
 - **Confounders:** File container overhead; tensor ordering; alignment; compression level; different file formats; duplicate/shared tensors; file metadata; decompression implementation.
 - **Required resources:** Windows PC with RTX 4060, CPU/RAM/storage; exact model files; compressor library; small reproducible script.
 - **Results / experiment IDs:** None yet.
-- **Next decision:** Complete prior-art and implementation review, then either refine a clearly distinct transformation or replace this hypothesis with a better-supported research question.
+- **Next decision:** Inspect NWC and ZipServ implementation requirements and evaluate whether a controlled RTX 4060 replication is feasible. Then either define a narrow research gap supported by the comparison or mark H-001 superseded in favor of a better-supported hypothesis.
 
 ## Candidate directions (not validated claims)
 1. Sensitivity-aware mixed precision under a fixed memory budget.
