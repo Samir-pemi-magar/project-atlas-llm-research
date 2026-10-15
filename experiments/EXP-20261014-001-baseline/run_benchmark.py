@@ -312,6 +312,17 @@ def main() -> int:
         "prompt_tokens": [float(r["prompt_tokens"]) for r in measured if is_number(r.get("prompt_tokens"))],
         "output_tokens": [float(r["output_tokens"]) for r in measured if is_number(r.get("output_tokens"))],
     }
+    per_prompt: dict[str, Any] = {}
+    for prompt in prompts:
+        rows = [r for r in measured if r.get("prompt_id") == prompt["id"]]
+        per_prompt[prompt["id"]] = {
+            "category": prompt["category"],
+            "successful_repetitions": len(rows),
+            "client_wall_ms": describe([r["client_wall_ms"] for r in rows]),
+            "prompt_tokens_per_second": describe([r["timings"]["prompt_per_second"] for r in rows if is_number(r.get("timings", {}).get("prompt_per_second"))]),
+            "decode_tokens_per_second": describe([r["timings"]["predicted_per_second"] for r in rows if is_number(r.get("timings", {}).get("predicted_per_second"))]),
+            "output_tokens": describe([float(r["output_tokens"]) for r in rows if is_number(r.get("output_tokens"))]),
+        }
     summary = {
         "status": "complete" if len(measured) == 60 and not all_request_errors and errors == 0 else "incomplete",
         "finished_utc": utc_now(),
@@ -321,6 +332,7 @@ def main() -> int:
         "request_errors": len(all_request_errors),
         "harness_errors": errors,
         "metrics": {name: describe(values) for name, values in metrics.items()},
+        "per_prompt": per_prompt,
         "telemetry": {
             "sample_count": len(telemetry),
             "peak_gpu_memory_used_mib": max((g.get("gpu_memory_used_mib", -1) for g in gpu_samples), default=None),
@@ -390,8 +402,15 @@ def run_one(base_url: str, prompt: dict[str, Any], phase: str, repetition: int, 
     }
     if status != 200:
         record["error"] = f"HTTP {status}: {response}"
+    if response.get("model") not in (None, CONFIG["model"]):
+        record["error"] = record.get("error", f"unexpected response model: {response.get('model')!r}")
     if not output_text.strip():
         record["error"] = record.get("error", "empty assistant content")
+    if choice.get("finish_reason") == "length":
+        record["error"] = record.get("error", "output truncated at max_tokens")
+    cache_n = timings.get("cache_n")
+    if cache_n != 0:
+        record["error"] = record.get("error", f"prompt cache was not verifiably disabled (cache_n={cache_n!r})")
     records.append(record)
     with raw_path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
