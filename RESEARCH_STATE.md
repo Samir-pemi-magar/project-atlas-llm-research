@@ -3,7 +3,7 @@
 > Update this file whenever a decision, target, blocker, or next action changes. This file is the concise source of truth for the project.
 
 ## Status
-- **Phase:** Baseline harness validation and targeted prior-art review
+- **Phase:** Harness remediation after independent review; prior-art expansion
 - **Last updated:** 2026-10-15
 - **Owner:** TODO
 - **Repository:** `project-atlas-llm-research`
@@ -94,8 +94,10 @@ Additional active directions include KV-cache quantization/offloading and hybrid
 - [x] Write an isolated baseline pilot protocol at `experiments/EXP-20261014-001-baseline/README.md`.
 - [x] Run an isolated diagnostic pilot on port 3001 and a verbose diagnostic on port 3002 without modifying DocPilot; verify actual GPU offload and capture smoke-test responses. These were diagnostic only.
 - [x] Draft a fixed 20-prompt workload and standard-library measurement harness; files are on branch `research/baseline-harness-and-prior-art`. Not yet executed or independently reviewed.
-- [ ] Have Claude independently review the protocol/harness, then run a plan-only check and syntax validation. Obtain authorization before any live validation or formal benchmark.
-- [ ] Inspect NWC and ZipServ papers/source requirements, verify model license, and expand targeted prior-art review before making any novelty claim.
+- [x] Obtain independent Claude review of the protocol/harness. Verdict: READY AFTER FIXES; major blockers include model alias mismatch, unverified runtime provenance, incomplete cache/slot controls, likely truncation, and host-wide telemetry.
+- [ ] Finish harness remediation: runtime identity/hash/launch verification, pinned cache/slot settings, request-level failure enforcement, provenance and telemetry improvements. The draft has not been syntax-checked after edits.
+- [ ] Run syntax and plan-only checks in a local clone after remediation. These checks must not contact the server. Obtain authorization before any live validation or formal benchmark.
+- [ ] Inspect DFloat11, NeuZip, Tan et al., ZipServ and NWC papers/source requirements; resolve the canonical ZipServ repository discrepancy; add native llama.cpp KV/offload baselines; verify model license before public distribution.
 - [ ] Select the next hypothesis only after baseline profiling and a specific prior-art gap are documented.
 
 ## Decision log
@@ -107,3 +109,4 @@ Additional active directions include KV-cache quantization/offloading and hybrid
 | 2026-10-14 | Isolate ATLAS inference in a separate disposable container on host port 3001 | Avoid affecting the existing DocPilot app and its PostgreSQL service | Diagnostic containers used ports 3001 and 3002; DocPilot services were left untouched |
 | 2026-10-15 | Use the chat-completion endpoint with thinking disabled for the harness draft | Raw completion produced poor/repetitive text; chat endpoint returned a coherent answer with `enable_thinking=false` | User-provided diagnostic responses; not formal benchmark evidence |
 | 2026-10-15 | Treat generic lossless weight compression as a crowded direction, not a novelty claim | Recent papers and active code directly overlap with H-001 | Targeted source triage in `research/PRIOR_ART_SCAN_2026-10-15.md`; full paper/source review remains incomplete |
+| 2026-10-15 | Do not run the baseline until harness fixes are completed | Independent review found an alias mismatch, unverified runtime identity, incomplete cache/slot controls, likely output truncation, and telemetry attribution gaps | Claude independent review; no benchmark run or live validation authorized |
