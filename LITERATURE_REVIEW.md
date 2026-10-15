@@ -104,3 +104,30 @@ No novelty claim is justified yet. Do not frame “losslessly compress weights,�
 - Which bottleneck actually limits the user's local workload: weight residency, transfer bandwidth, KV cache, or compute?
 
 These are questions to investigate, not novelty claims.
+
+
+## Targeted update — 2026-10-15
+
+A new targeted scan found direct, active overlaps with H-001 beyond the initial triage. See [the detailed prior-art scan](research/PRIOR_ART_SCAN_2026-10-15.md).
+
+### Newly identified direct overlaps
+
+- **ZipServ:** https://github.com/QuiverDance/ZipServ_ASPLOS26 — tensor-core-aware bitmap encoding and fused decompression/GEMM; repository reports weight-size reduction and inference speedups.
+- **Neural Weight Compression (NWC):** https://github.com/parda21/NWC — losslessly entropy-coded BF16 byte planes decoded inside CUDA matrix-vector kernels; reports tests on RTX 4070 and NVIDIA A16.
+- **Split12 / weight-compression ledger:** https://github.com/brianbell-x/weight-compression — byte-plane/codebook weight compression, exact reconstruction checks, and an inference record that documents a benchmark comparison overturned by a better-matched serving baseline.
+- **ZipNN:** https://github.com/zipnn/zipnn — tensor-aware lossless compression, relevant as a storage baseline.
+- **z4ai:** https://github.com/z4ai/z4ai — lossless checkpoint codec with emphasis on tensor structure, wide containers, sparsity, and deltas across related checkpoints.
+- **TurboQuant llama.cpp integrations:** https://github.com/Keyvanhardani/turboquant-ggml and https://github.com/TiredOfEverything/llama-cpp-turboquant — active KV-cache quantization implementations; repository claims need workload-specific quality and speed validation.
+- **ATSInfer:** https://arxiv.org/abs/2607.10183 — tensor-granularity CPU/GPU scheduling for consumer devices. A public integration audit at https://github.com/lordnyx0/ik_llama-atsinfer reports no decode-throughput improvement from ATSInfer on its tested setup, underscoring that paper results must be tested against the target runtime and hardware.
+
+### Updated interpretation
+
+The generic idea of applying a reversible tensor-aware transform and a general-purpose compressor to model weights is not a defensible novelty claim. H-001 remains a replication/control question until full-paper and source-level comparison finds a narrow gap. Do not claim novelty based on a different wrapper or an untested combination of known methods.
+
+Potential future directions include:
+1. A controlled reproduction of an existing compressed-weight inference method on an RTX 4060-class GPU, if its code and toolchain are feasible.
+2. A fixed-budget KV-cache quality/memory/latency study using the current llama.cpp stack.
+3. A focused study of where offloading or compression stops helping due to data-transfer, decode-kernel, or memory-bandwidth overhead.
+4. Checkpoint delta compression for related fine-tune/version sequences, if that storage lifecycle is within scope.
+
+These are candidate directions, not novelty claims. The current baseline must be measured first, and each candidate requires a closer source audit and independent review.
