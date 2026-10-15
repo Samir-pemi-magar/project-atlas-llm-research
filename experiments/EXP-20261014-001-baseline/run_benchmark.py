@@ -275,7 +275,7 @@ def main() -> int:
         warmup_ids = ["P01", "P10", "P20"]
         for index, prompt_id in enumerate(warmup_ids, start=1):
             prompt = by_id[prompt_id]
-            records.append(run_one(args.base_url, prompt, "warmup", index, raw_path, records))
+            run_one(args.base_url, prompt, "warmup", index, raw_path, records)
         # Do not start formal measurements unless cache behavior and sampling are verified.
         for row in records:
             validate_runtime_config(row)
@@ -286,7 +286,7 @@ def main() -> int:
         for pass_index in range(3):
             ordered = prompts[pass_index * 7 % len(prompts):] + prompts[:pass_index * 7 % len(prompts)]
             for prompt in ordered:
-                records.append(run_one(args.base_url, prompt, "measured", pass_index + 1, raw_path, records))
+                run_one(args.base_url, prompt, "measured", pass_index + 1, raw_path, records)
     except Exception as exc:
         errors += 1
         with raw_path.open("a", encoding="utf-8") as stream:
