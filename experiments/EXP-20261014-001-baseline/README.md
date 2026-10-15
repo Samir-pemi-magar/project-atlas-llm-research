@@ -1,6 +1,6 @@
 # EXP-20261014-001 — Qwen3-1.7B local inference baseline
 
-**Status: Planned. No benchmark measurements have been collected.**
+**Status: Harness drafted; not yet executed. Diagnostic pilot succeeded. No formal benchmark measurements have been collected.**
 
 ## Research question
 
@@ -20,7 +20,17 @@ Establish a reproducible reference point for single-request local inference befo
 
 The model path is a Hugging Face snapshot symlink resolving to the cache blob above. The cache is mounted read-only in the ATLAS container. The launch uses a local image ID and `--pull=never` to avoid an image pull; the intended model file is already cached. Do not run if Docker reports the local image is unavailable.
 
-## Isolated pilot launch
+
+
+## Diagnostic outcome (2026-10-15)
+
+The isolated diagnostic on port 3002 completed successfully. The verbose startup log confirmed 29/29 model layers offloaded to GPU, with a 1050.43 MiB CUDA model buffer and 448.00 MiB CUDA KV buffer. The server reported llama.cpp `0.6.0-dev (build 11610, commit 091b6a7fc)`.
+
+A raw `/completion` smoke request returned repetitive text. A `/v1/chat/completions` request initially used all 128 tokens for reasoning and returned empty assistant content. Adding `chat_template_kwargs: {"enable_thinking": false}` produced a coherent two-sentence answer. The response showed default `top_k=40` and `min_p=0.05` when those settings were not explicitly requested. These are diagnostic observations only, not benchmark results.
+
+The harness draft now uses the chat endpoint with thinking disabled, explicitly requests `temperature=0`, `top_k=1`, `top_p=1`, `min_p=0`, `seed=42`, `max_tokens=96`, and `cache_prompt=false`. It validates the server-reported effective settings and cache behavior before starting measured requests. See [HARNESS.md](HARNESS.md), [prompts_v1.json](prompts_v1.json), and [run_benchmark.py](run_benchmark.py).
+
+## Isolated pilot launch (historical launch procedure)
 
 Run in the Ubuntu WSL terminal, not in the DocPilot container. This starts a separate disposable container named `atlas-qwen3-pilot` on host port 3001; it does not modify DocPilot or PostgreSQL. Stop the pilot with Ctrl+C in its terminal; `--rm` removes the container after it stops.
 
@@ -69,10 +79,10 @@ Save the full JSON response and startup log outside the repository initially. Co
 ## Full baseline protocol (only after the pilot succeeds)
 
 - Use a fixed, versioned set of 20 prompts with no private data.
-- Fix context, prompt text, generation cap, seed, sampling settings, and cache policy across all runs.
+- Fix context (4096), prompt text, generation cap (96), seed (42), sampling settings (temperature 0, top-k 1, top-p 1, min-p 0), thinking mode (disabled), and cache policy (`cache_prompt=false`) across all runs; verify effective settings from server responses.
 - Run 3 warm-up generations, then 3 measured repetitions per prompt (60 measured requests); randomize or interleave method order in later comparisons to reduce time/order bias.
-- Capture per-request time-to-first-token where available, prompt processing rate, decode throughput, prompt/output token counts, wall-clock latency, errors, and output text.
-- Capture GPU memory before/after and peak usage with an appropriate telemetry method; also record system RAM. Note that coarse polling can miss peaks.
+- Capture prompt processing rate, decode throughput, prompt/output token counts, client wall-clock latency, errors, finish reason, effective generation settings, and output text. TTFT is unavailable in the current non-streaming harness and must not be reported as measured.
+- Capture sampled GPU memory/utilization/temperature/power and WSL VM RAM via the harness. The 0.5-second poll can miss short peaks; WSL RAM is not Windows process-level RAM.
 - Report median and spread (at least IQR) rather than only the best run. Record temperature, power mode, background GPU usage, runtime/image ID, exact model checksum, command, and logs.
 - Keep baseline generation deterministic where supported. Validate whether `temperature: 0` plus `top_k: 1` behaves greedily in this llama.cpp build.
 - Evaluate output quality separately from speed. Exact token-for-token repeatability is a runtime check, not proof of general model quality.
