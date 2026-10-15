@@ -1,0 +1,34 @@
+{
+  "dataset_id": "atlas-baseline-prompts-v1",
+  "version": 1,
+  "created_date": "2026-10-15",
+  "purpose": "Fixed single-turn diagnostic workload for local inference baseline; not a standardized benchmark or comprehensive quality evaluation.",
+  "instructions": {
+    "use_chat_endpoint": "/v1/chat/completions",
+    "chat_template_kwargs": {"enable_thinking": false},
+    "no_private_data": true,
+    "prompt_text_must_not_change_between_runs": true
+  },
+  "prompts": [
+    {"id": "P01", "category": "factual_explanation", "text": "In one concise sentence, explain what a CPU cache does."},
+    {"id": "P02", "category": "factual_explanation", "text": "In one concise sentence, explain why controlled experiments need a baseline."},
+    {"id": "P03", "category": "summarization", "text": "Summarize in one sentence: A laptop GPU has limited VRAM. Larger models may exceed that capacity, while quantization, offloading, and cache management change memory use and speed in different ways."},
+    {"id": "P04", "category": "instruction_following", "text": "List exactly three benefits of keeping experiment logs. Use one short bullet per benefit."},
+    {"id": "P05", "category": "instruction_following", "text": "Explain the difference between RAM and VRAM in exactly two sentences."},
+    {"id": "P06", "category": "reasoning_arithmetic", "text": "A model generates 120 tokens in 3 seconds. What is its average generation rate in tokens per second? Show the calculation briefly."},
+    {"id": "P07", "category": "reasoning_arithmetic", "text": "A file is 800 MB before compression and 560 MB afterward. What percentage reduction in size was achieved? Show the calculation briefly."},
+    {"id": "P08", "category": "coding", "text": "Write a short Python function that returns the median of a non-empty list of numbers using only the standard library. Include the import."},
+    {"id": "P09", "category": "coding", "text": "In Python, write a function that computes the interquartile range from a list of numbers using statistics.quantiles. State any minimum sample-size assumption."},
+    {"id": "P10", "category": "debugging", "text": "A benchmark is faster on the second run because the prompt cache was reused. Name the main confounder and give one way to control it."},
+    {"id": "P11", "category": "scientific_reasoning", "text": "A method reduces memory use by 30 percent but lowers task accuracy by 8 percentage points. Why is memory reduction alone insufficient to conclude that the method is better? Answer in two sentences."},
+    {"id": "P12", "category": "scientific_reasoning", "text": "Explain the difference between a hypothesis, an experimental result, and a novelty claim in three concise bullets."},
+    {"id": "P13", "category": "structured_output", "text": "Return a JSON object with keys 'metric', 'unit', and 'higher_is_better' for decode throughput measured in tokens per second. Return valid JSON only."},
+    {"id": "P14", "category": "structured_output", "text": "Return a JSON array containing exactly three strings: 'baseline', 'measurement', and 'reproduction'. Return valid JSON only."},
+    {"id": "P15", "category": "knowledge_reasoning", "text": "Why can lossless compression reduce file size without changing the represented values, while quantization can change them? Answer in two concise sentences."},
+    {"id": "P16", "category": "knowledge_reasoning", "text": "Explain why reducing KV-cache memory can matter more as a conversation becomes longer. Answer in two concise sentences."},
+    {"id": "P17", "category": "planning", "text": "Give a four-step plan for checking whether a local LLM benchmark is reproducible. Use numbered steps."},
+    {"id": "P18", "category": "planning", "text": "Name three measurements that should be recorded when comparing two inference configurations, and explain briefly why each matters."},
+    {"id": "P19", "category": "critical_thinking", "text": "A paper reports a 2x speedup over a baseline running a different software version and different batch size. What can and cannot be concluded from that comparison? Answer in two concise sentences."},
+    {"id": "P20", "category": "critical_thinking", "text": "A model gives the same answer three times with greedy decoding. Does that establish that its answers are correct? Explain briefly."}
+  ]
+}
