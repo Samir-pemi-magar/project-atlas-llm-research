@@ -97,3 +97,27 @@ The initial baseline experiment remains necessary: a controlled local inference 
 ## Evidence boundary
 
 This scan is based on publicly accessible paper abstracts, repository documentation, and reported project results. It is **not** a full-paper review of every cited work, source-code audit, independent replication, or novelty determination. No software was installed, no external repository was cloned, and no ATLAS benchmark was run for this scan.
+
+## Independent review update — 2026-10-15
+
+Claude's independent review identified gaps in this first-pass scan. This update records them as open verification tasks rather than treating the scan as exhaustive.
+
+### Additional direct baselines to review
+
+- **DFloat11:** https://arxiv.org/abs/2504.11651 and https://github.com/LeanModels/DFloat11. Directly relevant lossless BF16 compression and GPU decompression baseline; paper/source review is pending.
+- **NeuZip:** https://arxiv.org/abs/2410.20650. Identified through related-work references; primary paper and implementation status still need direct verification.
+- **TurboQuant:** https://arxiv.org/abs/2504.19874. Add the primary paper and its quality/memory claims to the KV-cache review; third-party llama.cpp forks are integrations, not substitutes for the paper.
+- **Native llama.cpp baselines:** document supported KV-cache types and native offload flags at the exact pinned commit before evaluating a fork or external method.
+
+### Repository discrepancy and evidence limits
+
+The ZipServ paper's repository link appears to point to `HPMLL/ZipServ_ASPLOS26`, while this scan originally linked `QuiverDance/ZipServ_ASPLOS26`. Their relationship is **unresolved**; do not assume they are equivalent until the canonical link, repository history, and code provenance are checked.
+
+The scan has not established whether DFloat11, NeuZip, ZipServ, NWC, or other closest methods support GGUF K-quants or integrate with the pinned llama.cpp build. No novelty claim follows from the absence of a feature in this preliminary scan. A systematic search across paper databases, GitHub code/issues/PRs, and Hugging Face remains outstanding.
+
+### Candidate research directions after baseline
+
+1. Entropy census of the already-cached Q4_K_M file, with a pre-registered kill threshold and comparison against the native quantization ladder at comparable bits per weight. This is a screening test, not a novelty claim.
+2. Fixed-VRAM comparison of weight precision, native KV-cache precision, and context allocation, with task-level quality measured separately from speed and memory.
+
+Both remain characterization or replication directions until closest prior art and implementations are reviewed.
