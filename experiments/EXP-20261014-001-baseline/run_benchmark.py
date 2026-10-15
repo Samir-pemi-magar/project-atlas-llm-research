@@ -236,6 +236,8 @@ def main() -> int:
         "experiment_id": "EXP-20261014-001",
         "run_id": out_dir.name,
         "started_utc": utc_now(),
+        "harness_source_sha256": __import__("hashlib").sha256(Path(__file__).read_bytes()).hexdigest(),
+        "prompt_file_sha256": __import__("hashlib").sha256(args.prompts.read_bytes()).hexdigest(),
         "base_url": args.base_url.rstrip("/"),
         "endpoint": CONFIG["endpoint"],
         "model_revision": MODEL_REVISION,
@@ -254,7 +256,8 @@ def main() -> int:
             "warmups": 3,
             "measured_repetitions_per_prompt": 3,
             "measured_requests": 60,
-            "ordering": "three fixed-order passes rotated by 7 positions; elapsed-time and thermal drift remain confounders",
+            "ordering": "each measured pass is independently shuffled with a fixed, recorded seed; elapsed-time and thermal drift remain confounders",
+            "ordering_seed": 20261015,
             "cache_policy": "request cache_prompt=false; launch must also set --cache-ram 0 and --no-cache-prompt; cache_n must be zero on every request",
             "quality": "raw outputs retained; no automatic quality score",
         },
@@ -284,10 +287,14 @@ def main() -> int:
             cache_n = row.get("timings", {}).get("cache_n")
             if cache_n != 0:
                 raise RuntimeError(f"Prompt-cache behavior is not verified disabled (warmup cache_n={cache_n!r}); refusing to begin measured requests.")
+        import random
         for pass_index in range(3):
-            ordered = prompts[pass_index * 7 % len(prompts):] + prompts[:pass_index * 7 % len(prompts)]
+            ordered = list(prompts)
+            random.Random(20261015 + pass_index).shuffle(ordered)
             for prompt in ordered:
-                run_one(args.base_url, prompt, "measured", pass_index + 1, raw_path, records)
+                row = run_one(args.base_url, prompt, "measured", pass_index + 1, raw_path, records)
+                if row.get("error"):
+                    raise RuntimeError(f"Measured request failed for {prompt['id']}: {row['error']}")
     except Exception as exc:
         errors += 1
         with raw_path.open("a", encoding="utf-8") as stream:
@@ -336,13 +343,13 @@ def main() -> int:
         "per_prompt": per_prompt,
         "telemetry": {
             "sample_count": len(telemetry),
-            "peak_gpu_memory_used_mib": max((g.get("gpu_memory_used_mib", -1) for g in gpu_samples), default=None),
-            "max_gpu_utilization_percent": max((g.get("gpu_utilization_percent", -1) for g in gpu_samples), default=None),
-            "max_gpu_temperature_c": max((g.get("gpu_temperature_c", -1) for g in gpu_samples), default=None),
-            "max_gpu_power_w": max((g.get("gpu_power_w", -1) for g in gpu_samples), default=None),
-            "peak_estimated_ram_used_mib": max((r.get("used_ram_mib_estimate", -1) for r in ram_samples), default=None),
-            "minimum_available_ram_mib": min((r.get("available_ram_mib", -1) for r in ram_samples), default=None),
-            "limitation": "0.5-second polling may miss short peaks; WSL /proc/meminfo measures the WSL VM, not Windows process-level RAM",
+            "peak_gpu_memory_used_mib": max((g["gpu_memory_used_mib"] for g in gpu_samples if is_number(g.get("gpu_memory_used_mib"))), default=None),
+            "max_gpu_utilization_percent": max((g["gpu_utilization_percent"] for g in gpu_samples if is_number(g.get("gpu_utilization_percent"))), default=None),
+            "max_gpu_temperature_c": max((g["gpu_temperature_c"] for g in gpu_samples if is_number(g.get("gpu_temperature_c"))), default=None),
+            "max_gpu_power_w": max((g["gpu_power_w"] for g in gpu_samples if is_number(g.get("gpu_power_w"))), default=None),
+            "peak_estimated_ram_used_mib": max((r["used_ram_mib_estimate"] for r in ram_samples if is_number(r.get("used_ram_mib_estimate"))), default=None),
+            "minimum_available_ram_mib": min((r["available_ram_mib"] for r in ram_samples if is_number(r.get("available_ram_mib"))), default=None),
+            "limitation": "1-second polling may miss short peaks; GPU telemetry is device-wide; WSL /proc/meminfo measures the WSL VM, not Windows process-level RAM",
         },
         "quality_assessment": "Not automatically scored. Review raw outputs separately; repeated deterministic output is not proof of correctness.",
         "raw_requests_file": raw_path.name,
@@ -384,12 +391,14 @@ def run_one(base_url: str, prompt: dict[str, Any], phase: str, repetition: int, 
     usage = response.get("usage", {}) if isinstance(response.get("usage", {}), dict) else {}
     timings = extracted["timings"]
     record: dict[str, Any] = {
+        "request_started_utc": utc_now(),
         "timestamp_utc": utc_now(),
         "phase": phase,
         "repetition": repetition,
         "prompt_id": prompt["id"],
         "category": prompt["category"],
         "prompt_text": prompt["text"],
+        "request_payload": payload,
         "http_status": status,
         "client_wall_ms": elapsed_ms,
         "prompt_tokens": usage.get("prompt_tokens", timings.get("prompt_n")),
@@ -400,6 +409,7 @@ def run_one(base_url: str, prompt: dict[str, Any], phase: str, repetition: int, 
         "generation_settings": extracted["generation_settings"],
         "cache_prompt_requested": CONFIG["cache_prompt"],
         "response_id": response.get("id"),
+        "raw_response": response,
     }
     if status != 200:
         record["error"] = f"HTTP {status}: {response}"
