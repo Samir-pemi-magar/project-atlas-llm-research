@@ -31,8 +31,8 @@ SERVER_VERSION_EXPECTED = "0.6.0-dev (build 11610, commit 091b6a7fc)"
 
 CONFIG = {
     "endpoint": "/v1/chat/completions",
-    "model": "atlas-qwen3-verbose-test",
-    "max_tokens": 96,
+    "model": "atlas-qwen3-1.7b",
+    "max_tokens": 256,
     "temperature": 0.0,
     "top_k": 1,
     "top_p": 1.0,
@@ -43,7 +43,7 @@ CONFIG = {
     "chat_template_kwargs": {"enable_thinking": False},
     "context_length": 4096,
     "request_timeout_seconds": 120,
-    "telemetry_interval_seconds": 0.5,
+    "telemetry_interval_seconds": 1.0,
 }
 
 def utc_now() -> str:
@@ -135,10 +135,10 @@ def gpu_snapshot() -> dict[str, float | int] | None:
                 return None
         memory, util, temperature, power = (numeric(field) for field in fields)
         return {
-            "gpu_memory_used_mib": int(memory) if memory is not None else -1,
-            "gpu_utilization_percent": util if util is not None else -1,
-            "gpu_temperature_c": temperature if temperature is not None else -1,
-            "gpu_power_w": power if power is not None else -1,
+            "gpu_memory_used_mib": int(memory) if memory is not None else None,
+            "gpu_utilization_percent": util,
+            "gpu_temperature_c": temperature,
+            "gpu_power_w": power,
         }
     except (OSError, subprocess.SubprocessError, IndexError):
         return None
@@ -193,6 +193,7 @@ def make_payload(prompt_text: str) -> dict[str, Any]:
         "cache_prompt": CONFIG["cache_prompt"],
         "chat_template_kwargs": CONFIG["chat_template_kwargs"],
         "stream": CONFIG["stream"],
+        "verbose": True,
     }
 
 def write_json(path: Path, value: Any) -> None:
@@ -239,8 +240,8 @@ def main() -> int:
         "endpoint": CONFIG["endpoint"],
         "model_revision": MODEL_REVISION,
         "model_sha256": MODEL_SHA256,
-        "llama_cpp_image_id": IMAGE_ID,
-        "expected_server_version": SERVER_VERSION_EXPECTED,
+        "expected_llama_cpp_image_id": IMAGE_ID,
+        "expected_server_version_not_runtime_verified": SERVER_VERSION_EXPECTED,
         "python_version": sys.version,
         "platform": platform.platform(),
         "machine": platform.machine(),
@@ -253,8 +254,8 @@ def main() -> int:
             "warmups": 3,
             "measured_repetitions_per_prompt": 3,
             "measured_requests": 60,
-            "ordering": "three deterministic round-robin passes, rotated by 7 prompt positions each pass",
-            "cache_policy": "request cache_prompt=false; run aborts before measured requests if cache_n is nonzero or unavailable",
+            "ordering": "three fixed-order passes rotated by 7 positions; elapsed-time and thermal drift remain confounders",
+            "cache_policy": "request cache_prompt=false; launch must also set --cache-ram 0 and --no-cache-prompt; cache_n must be zero on every request",
             "quality": "raw outputs retained; no automatic quality score",
         },
     }
