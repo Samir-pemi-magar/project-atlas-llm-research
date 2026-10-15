@@ -28,7 +28,7 @@ The isolated diagnostic on port 3002 completed successfully. The verbose startup
 
 A raw `/completion` smoke request returned repetitive text. A `/v1/chat/completions` request initially used all 128 tokens for reasoning and returned empty assistant content. Adding `chat_template_kwargs: {"enable_thinking": false}` produced a coherent two-sentence answer. The response showed default `top_k=40` and `min_p=0.05` when those settings were not explicitly requested. These are diagnostic observations only, not benchmark results.
 
-The harness draft now uses the chat endpoint with thinking disabled, explicitly requests `temperature=0`, `top_k=1`, `top_p=1`, `min_p=0`, `seed=42`, `max_tokens=96`, and `cache_prompt=false`. It validates the server-reported effective settings and cache behavior before starting measured requests. See [HARNESS.md](HARNESS.md), [prompts_v1.json](prompts_v1.json), and [run_benchmark.py](run_benchmark.py).
+The harness draft now requests the chat endpoint with thinking disabled, `temperature=0`, `top_k=1`, `top_p=1`, `min_p=0`, `seed=42`, `max_tokens=256`, and `cache_prompt=false`. The alias was aligned to the documented pilot alias; the actual port-3002 diagnostic's alias must be checked before any live use. It validates the server-reported effective settings and cache behavior before starting measured requests. See [HARNESS.md](HARNESS.md), [prompts_v1.json](prompts_v1.json), and [run_benchmark.py](run_benchmark.py).
 
 ## Isolated pilot launch (historical launch procedure)
 
@@ -76,10 +76,14 @@ curl -fsS --max-time 120 http://localhost:3001/completion \
 
 Save the full JSON response and startup log outside the repository initially. Confirm that response timing fields are present before implementing the measurement harness. The server's timing fields and exact API behavior are version-dependent and must be inspected, not assumed.
 
+## Independent review and current blocker
+
+Claude's review returned **READY AFTER FIXES**. The current draft is not approved for live validation: server identity and model checksum are not yet verified at runtime; the documented launch does not pin slot count or host-RAM cache behavior; verbose metadata behavior needs verification; host-wide telemetry cannot isolate ATLAS from DocPilot or other GPU work; and the harness still needs request-level validation, full provenance, and local syntax/plan-only checks. See `HARNESS.md` and `research/PRIOR_ART_SCAN_2026-10-15.md` for the remediation list. No formal benchmark has been run.
+
 ## Full baseline protocol (only after the pilot succeeds)
 
 - Use a fixed, versioned set of 20 prompts with no private data.
-- Fix context (4096), prompt text, generation cap (96), seed (42), sampling settings (temperature 0, top-k 1, top-p 1, min-p 0), thinking mode (disabled), and cache policy (`cache_prompt=false`) across all runs; verify effective settings from server responses.
+- Fix context (4096), prompt text, generation cap (256), seed (42), sampling settings (temperature 0, top-k 1, top-p 1, min-p 0), thinking mode (disabled), and cache policy (`cache_prompt=false`) across all runs; verify effective settings from server responses.
 - Run 3 warm-up generations, then 3 measured repetitions per prompt (60 measured requests); randomize or interleave method order in later comparisons to reduce time/order bias.
 - Capture prompt processing rate, decode throughput, prompt/output token counts, client wall-clock latency, errors, finish reason, effective generation settings, and output text. TTFT is unavailable in the current non-streaming harness and must not be reported as measured.
 - Capture sampled GPU memory/utilization/temperature/power and WSL VM RAM via the harness. The 0.5-second poll can miss short peaks; WSL RAM is not Windows process-level RAM.
