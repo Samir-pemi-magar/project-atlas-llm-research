@@ -14,7 +14,7 @@ Establish a reproducible reference point for single-request local inference befo
 - Model SHA-256: `d2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5`
 - llama.cpp image ID: `sha256:b0baccbe2e00b5d74e63f85f9f023c93d61d0f329475269e1e7002e87eb875ea`
 - Context: 4096 tokens
-- Initial GPU offload request: `-ngl 99` (actual offload must be verified in the isolated container's startup log)
+- GPU offload request: `-ngl 99`; actual offload was verified in the isolated verbose diagnostic log (29/29 layers). Reconfirm runtime/model identity before the formal run.
 - Hardware snapshot: NVIDIA GeForce RTX 4060, 8,188 MiB reported VRAM; 1,729 MiB occupied at one earlier idle snapshot. Recheck immediately before testing.
 - Existing DocPilot services: must not be stopped, restarted, reconfigured, or benchmarked through.
 
