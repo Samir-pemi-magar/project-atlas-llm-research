@@ -3,8 +3,8 @@
 > Update this file whenever a decision, target, blocker, or next action changes. This file is the concise source of truth for the project.
 
 ## Status
-- **Phase:** Isolated baseline pilot preparation
-- **Last updated:** 2026-10-14
+- **Phase:** Baseline harness validation and targeted prior-art review
+- **Last updated:** 2026-10-15
 - **Owner:** TODO
 - **Repository:** `project-atlas-llm-research`
 
@@ -36,11 +36,11 @@ These measurements describe one point in time, not guaranteed free capacity. Rec
 - **License:** Verify against the model repository before public distribution or derivative use
 - **Parameter count:** Approximately 2.03 billion, as reported by the running llama.cpp server
 - **Weight format / quantization:** GGUF, Q4_K_M
-- **Context length planned:** 4096 tokens; isolated pilot not yet run
+- **Context length planned:** 4096 tokens; isolated diagnostic pilot succeeded; formal benchmark not run
 - **Evaluation dataset / tasks:** Planned fixed set of 20 prompts; not yet created or evaluated
 - **Runtime image ID:** `sha256:b0baccbe2e00b5d74e63f85f9f023c93d61d0f329475269e1e7002e87eb875ea`
 - **Runtime alias in existing DocPilot service:** `docpilot-qwen3-1.7b`; ATLAS will use a separate disposable container/port
-- **GPU offload in the existing service:** Not confirmed by available filtered logs; verify in isolated pilot
+- **ATLAS diagnostic GPU offload:** Verified in the isolated verbose diagnostic container: 29/29 layers offloaded; CUDA model buffer 1050.43 MiB and KV buffer 448.00 MiB. This is diagnostic evidence, not a formal benchmark.
 
 ## Success criteria
 Set measurable targets before optimizing. Do not fill these with guessed values.
@@ -75,6 +75,12 @@ Lossless weight compression and memory-aware representation are already active r
 
 Long-context memory has extensive prior art too, including HeadInfer and RocketKV. Any ATLAS work on KV cache must compare against the closest methods and clearly separate exact offloading from approximate eviction/quantization.
 
+## Updated prior-art finding (2026-10-15)
+
+The broad H-001 direction—reversible tensor-aware transformation plus a general-purpose compressor—is crowded and is not a defensible novelty claim as stated. Newly identified direct overlaps include ZipServ (hardware-aware lossless compression with fused GPU kernels), Neural Weight Compression (NWC; lossless compressed weights decoded inside CUDA matvec), Split12, and Tan et al. (ISCA 2026). See `research/PRIOR_ART_SCAN_2026-10-15.md` for source links and the limits of this first-pass review. Keep H-001 as a replication/control question pending source-level comparison; do not treat it as the intended contribution.
+
+Additional active directions include KV-cache quantization/offloading and hybrid CPU/GPU tensor scheduling. These are also crowded areas; any new hypothesis needs a narrow, evidence-backed gap and task-level quality evaluation.
+
 ## Open questions
 1. Which model and workload fit the available hardware and answer a meaningful question?
 2. What are the actual CPU, OS build, driver, CUDA/runtime, and inference engine versions?
@@ -86,10 +92,10 @@ Long-context memory has extensive prior art too, including HeadInfer and RocketK
 - [x] Record available CPU, OS, driver, GPU, and runtime details from user-provided inspection.
 - [x] Select a cached candidate model and verify its resolved model-file SHA-256.
 - [x] Write an isolated baseline pilot protocol at `experiments/EXP-20261014-001-baseline/README.md`.
-- [ ] Run the isolated pilot on port 3001 without modifying DocPilot; verify actual GPU offload and capture a smoke-test response.
-- [ ] Build and validate a fixed 20-prompt workload and measurement harness after pilot response timing fields are confirmed.
-- [ ] Run warm-ups and repeated baseline trials; record raw results and variability.
-- [ ] Verify model license and expand targeted prior-art review before making any novelty claim.
+- [x] Run an isolated diagnostic pilot on port 3001 and a verbose diagnostic on port 3002 without modifying DocPilot; verify actual GPU offload and capture smoke-test responses. These were diagnostic only.
+- [x] Draft a fixed 20-prompt workload and standard-library measurement harness; files are on branch `research/baseline-harness-and-prior-art`. Not yet executed or independently reviewed.
+- [ ] Have Claude independently review the protocol/harness, then run a plan-only check and syntax validation. Obtain authorization before any live validation or formal benchmark.
+- [ ] Inspect NWC and ZipServ papers/source requirements, verify model license, and expand targeted prior-art review before making any novelty claim.
 - [ ] Select the next hypothesis only after baseline profiling and a specific prior-art gap are documented.
 
 ## Decision log
@@ -98,4 +104,6 @@ Long-context memory has extensive prior art too, including HeadInfer and RocketK
 | 2026-10-14 | Use the RTX 4060 Windows PC as the initial test environment | Concrete available hardware makes small reproducible experiments possible | User-provided system measurements; baseline not yet run |
 | 2026-10-14 | Review lossless weight compression prior art before choosing a contribution | Closely related published work already exists | Initial source review in `LITERATURE_REVIEW.md` |
 | 2026-10-14 | Use the cached Qwen3-1.7B Q4_K_M artifact as the first baseline candidate | Avoid an unnecessary model download and make the first experiment practical | Snapshot revision and SHA-256 verified inside existing container; ATLAS pilot still pending |
-| 2026-10-14 | Isolate ATLAS inference in a separate disposable container on host port 3001 | Avoid affecting the existing DocPilot app and its PostgreSQL service | Planned protocol in `experiments/EXP-20261014-001-baseline/README.md`; not yet run |
+| 2026-10-14 | Isolate ATLAS inference in a separate disposable container on host port 3001 | Avoid affecting the existing DocPilot app and its PostgreSQL service | Diagnostic containers used ports 3001 and 3002; DocPilot services were left untouched |
+| 2026-10-15 | Use the chat-completion endpoint with thinking disabled for the harness draft | Raw completion produced poor/repetitive text; chat endpoint returned a coherent answer with `enable_thinking=false` | User-provided diagnostic responses; not formal benchmark evidence |
+| 2026-10-15 | Treat generic lossless weight compression as a crowded direction, not a novelty claim | Recent papers and active code directly overlap with H-001 | Targeted source triage in `research/PRIOR_ART_SCAN_2026-10-15.md`; full paper/source review remains incomplete |
