@@ -42,23 +42,23 @@ Raw output text is preserved for later manual quality review; the script does no
 - Top-p: 1
 - Min-p: 0
 - Seed: 42
-- Maximum output tokens: 96
+- Maximum output tokens: 256 (still treated as a failure if `finish_reason` is `length`)
 - Prompt cache: explicitly request `cache_prompt: false`
 - Context: 4096
 - Model revision: `daeb8e2d528a760970442092f6bf1e55c3b659eb`
 - Model SHA-256: `d2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5`
 
-The script validates the effective sampling settings returned by this verbose server. It refuses to begin measured requests unless those settings match, warm-up outputs are nonempty and untruncated, and the server reports `cache_n=0` for all three warm-ups. If the build ignores a setting or the cache policy cannot be verified, the run aborts before formal measurements. The exact behavior must be verified against the running build; request parameters alone are not proof that a setting took effect.
+The draft requests verbose response metadata so it can inspect effective sampling settings. This behavior still requires verification against the actual running server. It refuses to begin measured requests unless those settings match, warm-up outputs are nonempty and untruncated, and the server reports `cache_n=0` for all three warm-ups. If the build ignores a setting or the cache policy cannot be verified, the run aborts before formal measurements. The exact behavior must be verified against the running build; request parameters alone are not proof that a setting took effect.
 
 ## Workload and measurement plan
 
 1. Check server health.
 2. Run three global warm-up requests using P01, P10, and P20.
 3. Validate effective sampling settings, output validity, and disabled prompt caching.
-4. Run 3 measured passes over all 20 prompts (60 measured requests). Each pass uses a deterministic rotation of the prompt order.
+4. Run 3 measured passes over all 20 prompts (60 measured requests). Each pass uses a fixed rotation of the prompt order; time and thermal drift remain confounders.
 5. Record client wall-clock latency, server prompt/decode timings, token counts, finish reason, output text, errors, and effective generation settings.
-6. Poll GPU memory/utilization/temperature/power and WSL VM RAM every 0.5 seconds while the run is active.
-7. Report median, Q1, Q3, and IQR. Retain every raw record.
+6. Poll GPU memory/utilization/temperature/power and WSL VM RAM every 1 second while the run is active. This is host-wide telemetry and does not attribute GPU use to the ATLAS container.
+7. Retain every raw record. Treat per-prompt results as primary; with only three repeats, report min/median/max and do not interpret pooled spread as repeat-level uncertainty.
 
 TTFT is not measured by this non-streaming harness. The 0.5-second telemetry poll can miss short-lived peaks, and WSL `/proc/meminfo` measures WSL VM RAM rather than Windows process-level RAM. Energy per token is not claimed from sampled power alone.
 
@@ -72,7 +72,7 @@ python3 experiments/EXP-20261014-001-baseline/run_benchmark.py --plan-only
 
 This checks the fixed prompt count and prints the planned workload without contacting the server or generating tokens. Inspect the script and prompt set; run a syntax check and review with Claude before any live validation.
 
-A live harness validation or formal run must be separately authorized. Do not start the 63-request workload until the methodology review is complete and the user approves it.
+The current draft is **not ready for live validation**. Before any live request, fix runtime identity verification (`/props`, `/v1/models`, container image/arguments and model SHA-256), pin `-np 1 --cache-ram 0 --no-cache-prompt`, verify `verbose` metadata and effective settings, and add an idle-GPU/background-work gate. A live harness validation or formal run must be separately authorized. Do not start the 63-request workload until the methodology review is complete and the user approves it.
 
 ## Interpretation and stop conditions
 
